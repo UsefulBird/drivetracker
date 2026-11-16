@@ -1,5 +1,12 @@
 ﻿import { describe, expect, it } from 'vitest'
-import { formatAccuracy, formatAge, formatHeading, formatSpeedKmh, msToKmh } from './units.ts'
+import {
+  formatAccuracy,
+  formatAge,
+  formatDuration,
+  formatHeading,
+  formatSpeedKmh,
+  msToKmh,
+} from './units.ts'
 
 describe('msToKmh', () => {
   it('converts m/s to km/h', () => {
@@ -38,6 +45,16 @@ describe('formatHeading', () => {
 describe('formatAccuracy', () => {
   it('rounds to whole metres', () => {
     expect(formatAccuracy(4.6)).toBe('± 5 m')
+  })
+})
+
+describe('formatDuration', () => {
+  it('shows minutes and seconds', () => {
+    expect(formatDuration(0)).toBe('0:00')
+    expect(formatDuration(245_900)).toBe('4:05')
+  })
+  it('adds hours when needed', () => {
+    expect(formatDuration(3_723_000)).toBe('1:02:03')
   })
 })
 

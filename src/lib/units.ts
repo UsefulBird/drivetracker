@@ -32,6 +32,15 @@ export function formatAccuracy(metres: number | null | undefined): string {
   return `± ${Math.round(metres)} m`
 }
 
+/** A duration in ms as a clock, e.g. "4:05" or "1:02:03". */
+export function formatDuration(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = (total % 60).toString().padStart(2, '0')
+  return h > 0 ? `${h}:${m.toString().padStart(2, '0')}:${s}` : `${m}:${s}`
+}
+
 /** A duration in ms as seconds with one decimal, e.g. "1.2 s". */
 export function formatAge(ms: number | null | undefined): string {
   if (isMissing(ms)) return '--'

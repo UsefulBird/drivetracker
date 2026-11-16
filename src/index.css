@@ -111,6 +111,10 @@ h2 {
   background: #ff453a;
 }
 
+.late {
+  color: #ff453a;
+}
+
 .wakelock-on {
   color: var(--accent);
 }
