@@ -4,6 +4,7 @@ import {
   formatAge,
   formatDuration,
   formatHeading,
+  formatKm,
   formatSpeedKmh,
   msToKmh,
 } from './units.ts'
@@ -45,6 +46,13 @@ describe('formatHeading', () => {
 describe('formatAccuracy', () => {
   it('rounds to whole metres', () => {
     expect(formatAccuracy(4.6)).toBe('± 5 m')
+  })
+})
+
+describe('formatKm', () => {
+  it('shows kilometres with two decimals', () => {
+    expect(formatKm(12_345)).toBe('12.35 km')
+    expect(formatKm(0)).toBe('0.00 km')
   })
 })
 

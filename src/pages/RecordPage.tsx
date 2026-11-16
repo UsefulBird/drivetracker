@@ -1,5 +1,5 @@
 import { useNow } from '../hooks/useNow.ts'
-import { GAP_THRESHOLD_MS } from '../lib/track.ts'
+import { GAP_THRESHOLD_MS } from '../lib/trackMath.ts'
 import { formatAccuracy, formatAge, formatDuration, formatSpeedKmh } from '../lib/units.ts'
 import { continueDrive, finish, start, type RecorderError, type WakeLockStatus } from '../recording/recorder.ts'
 import { useRecorder } from '../recording/useRecorder.ts'
@@ -31,11 +31,11 @@ export default function RecordPage() {
           </p>
         </div>
         <p>
-          <button type="button" className="button" onClick={continueDrive}>
+          <button type="button" className="button" onClick={() => continueDrive()}>
             Continue recording
           </button>
         </p>
-        <button type="button" className="button button-stop" onClick={finish}>
+        <button type="button" className="button button-stop" onClick={() => finish()}>
           Finish drive
         </button>
         {rec.error && <ErrorMessage kind={rec.error} />}
@@ -46,6 +46,12 @@ export default function RecordPage() {
   return (
     <section>
       <h1>Record</h1>
+
+      {rec.replay && (
+        <div className="replay-banner">
+          REPLAY · {rec.replay.speedFactor}× · {rec.replay.fileName}
+        </div>
+      )}
 
       <div className="speed">
         <span className="speed-value">{recording ? formatSpeedKmh(rec.speed) : '--'}</span>
@@ -76,7 +82,7 @@ export default function RecordPage() {
       <button
         type="button"
         className={recording ? 'button button-stop' : 'button'}
-        onClick={recording ? finish : start}
+        onClick={() => (recording ? finish() : start())}
       >
         {recording ? 'Stop' : 'Start'}
       </button>

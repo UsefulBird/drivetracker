@@ -31,6 +31,8 @@ DriveTracker is a personal mobile web app (installed to the iPhone home screen) 
 - Never add a backend, login, analytics, or any paid or API-key-based service. The app must cost nothing to run.
 - Mobile Safari on iPhone is the main target. Respect safe areas (notch / home indicator) and keep the true black (`#000`) dark theme.
 - `base` in `vite.config.ts` must match the GitHub repository name.
+- Drive stats are cached on each drive. If the maths in `src/lib/trackMath.ts` changes, bump `STATS_VERSION` so older drives are recomputed.
+- The recorder (`src/recording/recorder.ts`) reads positions only through `source()`; GPX replay plugs in there, so live and replayed drives share one code path.
 
 ## Commands
 

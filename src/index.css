@@ -111,6 +111,45 @@ h2 {
   background: #ff453a;
 }
 
+label.button {
+  display: block;
+  text-align: center;
+}
+
+.button.disabled {
+  opacity: 0.4;
+}
+
+a {
+  color: var(--accent);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.replay-banner {
+  margin-bottom: 8px;
+  padding: 8px;
+  font-weight: 700;
+  text-align: center;
+  color: #000;
+  background: #ff9f0a;
+  border-radius: 8px;
+}
+
 .late {
   color: #ff453a;
 }

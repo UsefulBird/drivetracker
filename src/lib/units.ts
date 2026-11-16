@@ -18,6 +18,11 @@ export function formatSpeedKmh(speedMs: number | null | undefined): string {
   return Math.round(msToKmh(speedMs)).toString()
 }
 
+/** Distance in kilometres with two decimals, e.g. "12.34 km". */
+export function formatKm(metres: number): string {
+  return `${(metres / 1000).toFixed(2)} km`
+}
+
 /** Heading as degrees plus compass point, e.g. "135° SE", or "--" when unknown. */
 export function formatHeading(degrees: number | null | undefined): string {
   if (isMissing(degrees)) return '--'

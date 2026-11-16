@@ -3,7 +3,10 @@
 // React components read its state through useRecorder().
 
 import { db, pointsOfDrive } from '../db/db.ts'
-import { summariseTrack, toPointFields, type TrackSummary } from '../lib/track.ts'
+import { statsFields } from '../db/drives.ts'
+import { toPointFields, type PointFields, type PositionLike } from '../lib/track.ts'
+import { summariseTrack, type TrackSummary } from '../lib/trackMath.ts'
+import { createReplaySource, type LocationSource, type ReplaySource } from './replaySource.ts'
 
 export type RecorderStatus = 'loading' | 'idle' | 'recording' | 'resumable'
 export type WakeLockStatus = 'off' | 'on' | 'failed' | 'unsupported'
@@ -26,6 +29,8 @@ export interface RecorderState {
   lastInterruptionMs: number | null
   /** Result of the last finished drive. */
   summary: TrackSummary | null
+  /** Set while points come from a GPX file instead of the real GPS. */
+  replay: { fileName: string; speedFactor: number } | null
 }
 
 const ACTIVE_DRIVE_KEY = 'activeDriveId'
@@ -45,6 +50,7 @@ let state: RecorderState = {
   interruptions: 0,
   lastInterruptionMs: null,
   summary: null,
+  replay: null,
 }
 
 const listeners = new Set<() => void>()
@@ -77,13 +83,19 @@ let lastT = 0
 let writes: Promise<unknown> = Promise.resolve()
 /** True while start/continue/finish is saving, so a double tap can't run it twice. */
 let busy = false
+/** Where positions come from: the real GPS, or a GPX replay that behaves like it. */
+let replay: ReplaySource | null = null
 
-function once(action: () => Promise<void>) {
-  return async () => {
+function source(): LocationSource {
+  return replay ?? navigator.geolocation
+}
+
+function once<A extends unknown[]>(action: (...args: A) => Promise<void>) {
+  return async (...args: A) => {
     if (busy) return
     busy = true
     try {
-      await action()
+      await action(...args)
     } finally {
       busy = false
     }
@@ -113,13 +125,13 @@ export async function init() {
   }
 }
 
-export const start = once(async () => {
+export const start = once(async (name?: string) => {
   if (state.status !== 'idle' || !gpsAvailable()) return
   const startedAt = Date.now()
   try {
     const driveId = await db.transaction('rw', db.drives, db.meta, async () => {
       const id = await db.drives.add({
-        name: new Date(startedAt).toLocaleString(),
+        name: name ?? new Date(startedAt).toLocaleString(),
         startedAt,
         endedAt: null,
         calibrationId: null,
@@ -176,13 +188,7 @@ export const finish = once(async () => {
     const endedAt = status === 'resumable' ? (points.at(-1)?.t ?? startedAt!) : Date.now()
     const summary = summariseTrack(points, startedAt!, endedAt)
     await db.transaction('rw', db.drives, db.meta, async () => {
-      await db.drives.update(driveId, {
-        endedAt,
-        distanceM: summary.distanceM,
-        durationS: summary.durationS,
-        maxSpeed: summary.maxSpeed,
-        gapCount: summary.gapCount,
-      })
+      await db.drives.update(driveId, { endedAt, ...statsFields(summary) })
       await db.meta.delete(ACTIVE_DRIVE_KEY)
     })
     update({ status: 'idle', driveId: null, startedAt: null, summary })
@@ -191,7 +197,27 @@ export const finish = once(async () => {
   }
 })
 
+/**
+ * Records a new drive from GPX points instead of the GPS, at real speed or faster.
+ * Points go through exactly the same path as live GPS; the drive finishes by
+ * itself after the last point.
+ */
+export async function startReplay(points: PointFields[], fileName: string, speedFactor: number) {
+  if (state.status !== 'idle' || busy) return
+  replay = createReplaySource(points, speedFactor, () => finish())
+  update({ replay: { fileName, speedFactor } })
+  await start(`Replay of ${fileName}`)
+  if (getState().status !== 'recording') stopReplay()
+}
+
+function stopReplay() {
+  replay?.stop()
+  replay = null
+  update({ replay: null })
+}
+
 function gpsAvailable(): boolean {
+  if (replay) return true
   if (!window.isSecureContext) update({ error: 'insecure' })
   else if (!('geolocation' in navigator)) update({ error: 'unsupported' })
   else return true
@@ -210,24 +236,25 @@ function endTracking() {
   if (watchdog !== null) clearInterval(watchdog)
   watchdog = null
   hiddenAt = null
+  stopReplay()
 }
 
 /** Starts the GPS watch, replacing any existing one. */
 function startWatch() {
   stopWatch()
   watchStartedAt = Date.now()
-  watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, {
+  watchId = source().watchPosition(onPosition, onPositionError, {
     enableHighAccuracy: true,
     maximumAge: 0,
   })
 }
 
 function stopWatch() {
-  if (watchId !== null) navigator.geolocation.clearWatch(watchId)
+  if (watchId !== null) source().clearWatch(watchId)
   watchId = null
 }
 
-function onPosition(pos: GeolocationPosition) {
+function onPosition(pos: PositionLike) {
   if (state.status !== 'recording' || state.driveId === null) return
   const fields = toPointFields(pos)
   if (fields.t <= lastT) return

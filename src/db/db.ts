@@ -16,6 +16,10 @@ export interface Drive {
   maxSpeed: number | null
   /** Number of pauses between points longer than 5 s. */
   gapCount: number
+  // Not indexed, so adding them needed no schema version change.
+  pointCount?: number
+  /** Which version of the stats maths produced the cached numbers (see STATS_VERSION). */
+  statsVersion?: number
 }
 
 export interface TrackPoint {
