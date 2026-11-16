@@ -38,3 +38,4 @@ DriveTracker is a personal mobile web app (installed to the iPhone home screen) 
 - `npm test` — run tests
 - `npm run build` — type-check and build to `dist/`
 - `npm run preview` — serve the built `dist/` locally
+- `npm run icons` — regenerate the PNG app icons in `public/` from `public/favicon.svg`
